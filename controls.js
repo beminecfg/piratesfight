@@ -116,9 +116,16 @@ export function makeControls(camera, planeWater, fireFn, aimPoint){
       rightId=id; rightJoy.active=true; rightJoy.start.x=x; rightJoy.start.y=y; rightJoy.pos.x=x; rightJoy.pos.y=y; rightJoy.vec.set(0,0); 
       return;
     }
-    // Средняя треть экрана - управление камерой (только если джойстики не активны)
-    if(camTouchId===null && leftId===null && rightId===null){
-      camTouchId=id; prevTouch.x=x; prevTouch.y=y;
+    // Средняя треть экрана - управление камерой
+    // Работает если: джойстики не активны ИЛИ активен только левый джойстик (движение + камера)
+    const inCenterZone = x >= leftZoneEnd && x <= rightZoneStart;
+    if(inCenterZone && camTouchId===null){
+      // Разрешаем управление камерой если:
+      // - Ничего не активно
+      // - ИЛИ активен только левый джойстик (движение + камера одновременно)
+      if((leftId===null && rightId===null) || (leftId!==null && rightId===null)){
+        camTouchId=id; prevTouch.x=x; prevTouch.y=y;
+      }
     }
   }
   function joyMove(id,x,y){
@@ -180,8 +187,10 @@ export function makeControls(camera, planeWater, fireFn, aimPoint){
     
     const touchIds = Object.keys(touches);
     
-    // Check for pinch zoom (2 fingers) - ONLY if both touches are in center zone
-    if(touchIds.length === 2){
+    // Check for pinch zoom (2 fingers) - ONLY if:
+    // 1. Both touches in center third
+    // 2. NO joysticks are active (to allow movement + camera control)
+    if(touchIds.length === 2 && leftId === null && rightId === null){
       const t1 = touches[touchIds[0]];
       const t2 = touches[touchIds[1]];
       
@@ -192,13 +201,18 @@ export function makeControls(camera, planeWater, fireFn, aimPoint){
       const inCenter2 = t2.x >= centerStart && t2.x <= centerEnd;
       
       if(inCenter1 && inCenter2){
-        // Both in center - enable pinch zoom
+        // Both in center, no joysticks - enable pinch zoom
         const dx = t2.x - t1.x;
         const dy = t2.y - t1.y;
         pinchDist = Math.sqrt(dx*dx + dy*dy);
         e.preventDefault();
         return;
       }
+    }
+    
+    // Reset pinch if not 2 fingers or joysticks active
+    if(touchIds.length !== 2 || leftId !== null || rightId !== null){
+      pinchDist = 0;
     }
     
     // Process touches as joysticks (allows multiple simultaneous)
@@ -215,8 +229,11 @@ export function makeControls(camera, planeWater, fireFn, aimPoint){
     
     const touchIds = Object.keys(touches);
     
-    // Pinch zoom - ONLY if both touches are in center zone
-    if(touchIds.length === 2 && pinchDist > 0){
+    // Pinch zoom - ONLY if:
+    // 1. Both touches in center
+    // 2. NO joysticks active
+    // 3. pinchDist was initialized
+    if(touchIds.length === 2 && pinchDist > 0 && leftId === null && rightId === null){
       const t1 = touches[touchIds[0]];
       const t2 = touches[touchIds[1]];
       
@@ -240,6 +257,11 @@ export function makeControls(camera, planeWater, fireFn, aimPoint){
         e.preventDefault();
         return;
       }
+    }
+    
+    // If joysticks became active, disable pinch
+    if(leftId !== null || rightId !== null){
+      pinchDist = 0;
     }
     
     // Process touches as joysticks (allows multiple simultaneous)

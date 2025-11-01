@@ -750,20 +750,27 @@ function handleResize(){
   const width = window.innerWidth;
   const height = window.innerHeight;
   
+  // Cap pixel ratio to prevent UI scaling issues on high-DPI mobile devices
+  const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+  
   // Set WebGL canvas size properly
   renderer.setSize(width, height);
-  renderer.setPixelRatio(window.devicePixelRatio || 1);
+  renderer.setPixelRatio(pixelRatio);
   
   // Set canvas CSS size to prevent stretching
   const canvas = renderer.domElement;
   canvas.style.width = width + 'px';
   canvas.style.height = height + 'px';
   
-  // Set HUD canvas size (both actual and CSS)
-  hud.width = width;
-  hud.height = height;
+  // Set HUD canvas size (actual size should match pixel ratio for crisp rendering)
+  hud.width = width * pixelRatio;
+  hud.height = height * pixelRatio;
   hud.style.width = width + 'px';
   hud.style.height = height + 'px';
+  
+  // Scale HUD context to account for pixel ratio
+  const h2dContext = hud.getContext('2d');
+  h2dContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
   
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
