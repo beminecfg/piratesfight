@@ -1,0 +1,25 @@
+{
+  "name": "Pirates 3D - Naval Battle",
+  "short_name": "Pirates 3D",
+  "description": "3D naval battle game with realistic ship combat",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#1a4d80",
+  "theme_color": "#1a4d80",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
+

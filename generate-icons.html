@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Icon Generator - Pirates 3D</title>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      padding: 20px;
+      background: #1a4d80;
+      color: white;
+    }
+    canvas { 
+      border: 2px solid white; 
+      margin: 10px;
+      background: #1a4d80;
+    }
+    button {
+      background: #44ff44;
+      border: none;
+      padding: 15px 30px;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 10px;
+      border-radius: 5px;
+    }
+    button:hover { background: #66ff66; }
+    .container { text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🏴‍☠️ Pirates 3D - Icon Generator</h1>
+    <p>Нажмите на кнопки, чтобы скачать иконки для iOS</p>
+    
+    <div>
+      <canvas id="canvas152" width="152" height="152"></canvas>
+      <canvas id="canvas167" width="167" height="167"></canvas>
+      <canvas id="canvas180" width="180" height="180"></canvas>
+      <canvas id="canvas192" width="192" height="192"></canvas>
+      <canvas id="canvas512" width="512" height="512"></canvas>
+    </div>
+    
+    <div>
+      <button onclick="downloadIcon(152)">Скачать 152x152</button>
+      <button onclick="downloadIcon(167)">Скачать 167x167</button>
+      <button onclick="downloadIcon(180)">Скачать 180x180</button>
+      <button onclick="downloadIcon(192)">Скачать 192x192</button>
+      <button onclick="downloadIcon(512)">Скачать 512x512</button>
+    </div>
+    
+    <div style="margin-top: 20px;">
+      <button onclick="downloadAll()" style="background: #ff4444;">⬇️ Скачать ВСЕ иконки</button>
+    </div>
+  </div>
+
+  <script>
+    function drawIcon(size) {
+      const canvas = document.getElementById(`canvas${size}`);
+      const ctx = canvas.getContext('2d');
+      const center = size / 2;
+      
+      // Background gradient
+      const gradient = ctx.createRadialGradient(center, center, 0, center, center, size/2);
+      gradient.addColorStop(0, '#2a5d8d');
+      gradient.addColorStop(1, '#1a4d80');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, size, size);
+      
+      // Draw ship
+      ctx.save();
+      ctx.translate(center, center);
+      
+      const scale = size / 192;
+      ctx.scale(scale, scale);
+      
+      // Ship hull
+      ctx.fillStyle = '#8B4513';
+      ctx.beginPath();
+      ctx.moveTo(0, -40);
+      ctx.lineTo(25, 30);
+      ctx.lineTo(15, 35);
+      ctx.lineTo(-15, 35);
+      ctx.lineTo(-25, 30);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Ship deck
+      ctx.fillStyle = '#A0522D';
+      ctx.fillRect(-20, -10, 40, 30);
+      
+      // Mast
+      ctx.fillStyle = '#654321';
+      ctx.fillRect(-3, -45, 6, 50);
+      
+      // Sail
+      ctx.fillStyle = '#F5F5DC';
+      ctx.beginPath();
+      ctx.moveTo(-3, -40);
+      ctx.lineTo(-30, -25);
+      ctx.lineTo(-30, 0);
+      ctx.lineTo(-3, -5);
+      ctx.closePath();
+      ctx.fill();
+      
+      ctx.beginPath();
+      ctx.moveTo(3, -40);
+      ctx.lineTo(30, -25);
+      ctx.lineTo(30, 0);
+      ctx.lineTo(3, -5);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Flag
+      ctx.fillStyle = '#000';
+      ctx.fillRect(-3, -50, 6, 10);
+      ctx.fillStyle = '#ff0000';
+      ctx.beginPath();
+      ctx.moveTo(3, -50);
+      ctx.lineTo(20, -45);
+      ctx.lineTo(3, -40);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Skull on flag
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(12, -45, 3, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Cannons
+      ctx.fillStyle = '#333';
+      ctx.fillRect(20, 5, 8, 3);
+      ctx.fillRect(-28, 5, 8, 3);
+      
+      // Waves
+      ctx.strokeStyle = '#4AA3DF';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      for(let i = -50; i < 50; i += 10){
+        ctx.moveTo(i, 40);
+        ctx.quadraticCurveTo(i + 3, 37, i + 6, 40);
+      }
+      ctx.stroke();
+      
+      ctx.restore();
+    }
+    
+    // Draw all icons on load
+    [152, 167, 180, 192, 512].forEach(size => drawIcon(size));
+    
+    function downloadIcon(size) {
+      const canvas = document.getElementById(`canvas${size}`);
+      const link = document.createElement('a');
+      link.download = `icon-${size}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+    
+    function downloadAll() {
+      [152, 167, 180, 192, 512].forEach((size, index) => {
+        setTimeout(() => downloadIcon(size), index * 300);
+      });
+    }
+  </script>
+</body>
+</html>
+

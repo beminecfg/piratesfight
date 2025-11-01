@@ -1,0 +1,43 @@
+html,body{
+  margin:0;
+  padding:0;
+  overflow:hidden;
+  height:100%;
+  background:#061522;
+  /* iOS Safe Area Support */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  /* Prevent pull-to-refresh on iOS */
+  overscroll-behavior-y: none;
+  /* Disable text selection */
+  -webkit-user-select: none;
+  user-select: none;
+  /* Disable tap highlight */
+  -webkit-tap-highlight-color: transparent;
+  /* Smooth scrolling */
+  -webkit-overflow-scrolling: touch;
+}
+canvas{
+  width:100%;
+  height:100%;
+  display:block;
+  /* Touch action for better touch handling */
+  touch-action: none;
+}
+
+/* iOS standalone mode detection */
+@media (display-mode: standalone) {
+  body {
+    /* When launched from home screen */
+    background: #000;
+  }
+}
+
+/* Prevent zoom on iOS */
+input, select, textarea {
+  font-size: 16px;
+}
+
+/* Hide scrollbars on iOS */
+::-webkit-scrollbar {
+  display: none;
+}
