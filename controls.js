@@ -106,16 +106,18 @@ export function makeControls(camera, planeWater, fireFn, aimPoint){
     const leftZoneEnd = safeArea.left + safeWidth * 0.33;
     const rightZoneStart = safeArea.left + safeWidth * 0.67;
     
-    // Левая треть экрана - джойстик движения
-    if(x < leftZoneEnd && leftId===null && camTouchId===null){ 
+    // Левая треть экрана - джойстик движения (НЕЗАВИСИМО от других)
+    if(x < leftZoneEnd && leftId===null){ 
       leftId=id; leftJoy.active=true; leftJoy.start.x=x; leftJoy.start.y=y; leftJoy.pos.x=x; leftJoy.pos.y=y; leftJoy.vec.set(0,0); 
+      return;
     }
-    // Правая треть экрана - джойстик стрельбы
-    else if(x > rightZoneStart && rightId===null && camTouchId===null){ 
+    // Правая треть экрана - джойстик стрельбы (НЕЗАВИСИМО от других)
+    if(x > rightZoneStart && rightId===null){ 
       rightId=id; rightJoy.active=true; rightJoy.start.x=x; rightJoy.start.y=y; rightJoy.pos.x=x; rightJoy.pos.y=y; rightJoy.vec.set(0,0); 
+      return;
     }
-    // Средняя треть экрана - управление камерой
-    else if(camTouchId===null && leftId===null && rightId===null){
+    // Средняя треть экрана - управление камерой (только если джойстики не активны)
+    if(camTouchId===null && leftId===null && rightId===null){
       camTouchId=id; prevTouch.x=x; prevTouch.y=y;
     }
   }
@@ -176,16 +178,32 @@ export function makeControls(camera, planeWater, fireFn, aimPoint){
       touches[t.identifier] = {x: t.clientX, y: t.clientY};
     }
     
-    // Check for pinch zoom (2 fingers)
     const touchIds = Object.keys(touches);
+    
+    // Check for pinch zoom (2 fingers) - ONLY if both touches are in center zone
     if(touchIds.length === 2){
       const t1 = touches[touchIds[0]];
       const t2 = touches[touchIds[1]];
-      const dx = t2.x - t1.x;
-      const dy = t2.y - t1.y;
-      pinchDist = Math.sqrt(dx*dx + dy*dy);
-    } else {
-      for(const t of e.changedTouches){ joyStart(t.identifier, t.clientX, t.clientY); }
+      
+      // Check if both touches are in center third of screen
+      const centerStart = innerWidth * 0.33;
+      const centerEnd = innerWidth * 0.67;
+      const inCenter1 = t1.x >= centerStart && t1.x <= centerEnd;
+      const inCenter2 = t2.x >= centerStart && t2.x <= centerEnd;
+      
+      if(inCenter1 && inCenter2){
+        // Both in center - enable pinch zoom
+        const dx = t2.x - t1.x;
+        const dy = t2.y - t1.y;
+        pinchDist = Math.sqrt(dx*dx + dy*dy);
+        e.preventDefault();
+        return;
+      }
+    }
+    
+    // Process touches as joysticks (allows multiple simultaneous)
+    for(const t of e.changedTouches){ 
+      joyStart(t.identifier, t.clientX, t.clientY); 
     }
   }, {passive:false});
   
@@ -197,24 +215,36 @@ export function makeControls(camera, planeWater, fireFn, aimPoint){
     
     const touchIds = Object.keys(touches);
     
-    // Pinch zoom
-    if(touchIds.length === 2){
+    // Pinch zoom - ONLY if both touches are in center zone
+    if(touchIds.length === 2 && pinchDist > 0){
       const t1 = touches[touchIds[0]];
       const t2 = touches[touchIds[1]];
-      const dx = t2.x - t1.x;
-      const dy = t2.y - t1.y;
-      const newDist = Math.sqrt(dx*dx + dy*dy);
       
-      if(pinchDist > 0){
+      // Check if both touches are in center third of screen
+      const centerStart = innerWidth * 0.33;
+      const centerEnd = innerWidth * 0.67;
+      const inCenter1 = t1.x >= centerStart && t1.x <= centerEnd;
+      const inCenter2 = t2.x >= centerStart && t2.x <= centerEnd;
+      
+      if(inCenter1 && inCenter2){
+        const dx = t2.x - t1.x;
+        const dy = t2.y - t1.y;
+        const newDist = Math.sqrt(dx*dx + dy*dy);
+        
         const delta = newDist - pinchDist;
         if(window.cameraDistance !== undefined){
           window.cameraDistance = Math.max(100, Math.min(400, window.cameraDistance - delta * 0.5));
         }
+        
+        pinchDist = newDist;
+        e.preventDefault();
+        return;
       }
-      pinchDist = newDist;
-      e.preventDefault();
-    } else {
-      for(const t of e.changedTouches){ joyMove(t.identifier, t.clientX, t.clientY); }
+    }
+    
+    // Process touches as joysticks (allows multiple simultaneous)
+    for(const t of e.changedTouches){ 
+      joyMove(t.identifier, t.clientX, t.clientY); 
     }
   }, {passive:false});
   

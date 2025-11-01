@@ -13,8 +13,8 @@ function buildShip(kind){
   return obj;
 }
 
-const canvas = document.getElementById("game") || (()=>{const c=document.createElement("canvas");c.id="game";document.body.appendChild(c);c.style.width='100%';c.style.height='100%';return c;})();
-const hud = document.getElementById("hud") || (()=>{const c=document.createElement("canvas");c.id="hud";document.body.appendChild(c);c.style.position='fixed';c.style.left='0';c.style.top='0';c.style.width='100vw';c.style.height='100vh';c.style.pointerEvents='none';return c;})();
+const canvas = document.getElementById("game") || (()=>{const c=document.createElement("canvas");c.id="game";document.body.appendChild(c);return c;})();
+const hud = document.getElementById("hud") || (()=>{const c=document.createElement("canvas");c.id="hud";document.body.appendChild(c);c.style.position='fixed';c.style.left='0';c.style.top='0';c.style.pointerEvents='none';return c;})();
 const h2d = hud.getContext("2d");
 
 const renderer = makeRenderer(canvas);
@@ -750,12 +750,23 @@ function handleResize(){
   const width = window.innerWidth;
   const height = window.innerHeight;
   
+  // Set WebGL canvas size properly
   renderer.setSize(width, height);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Cap at 2x for performance
-  camera.aspect = width / height;
-  camera.updateProjectionMatrix();
+  renderer.setPixelRatio(window.devicePixelRatio || 1);
+  
+  // Set canvas CSS size to prevent stretching
+  const canvas = renderer.domElement;
+  canvas.style.width = width + 'px';
+  canvas.style.height = height + 'px';
+  
+  // Set HUD canvas size (both actual and CSS)
   hud.width = width;
   hud.height = height;
+  hud.style.width = width + 'px';
+  hud.style.height = height + 'px';
+  
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
 }
 
 handleResize();

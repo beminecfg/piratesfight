@@ -25,18 +25,24 @@ html,body{
   -webkit-overflow-scrolling: touch;
 }
 canvas{
-  width:100vw;
-  height:100vh;
-  max-width:100%;
-  max-height:100%;
   display:block;
   position:absolute;
   top:0;
   left:0;
+  /* Let JavaScript control size, don't override with CSS */
   /* Touch action for better touch handling */
   touch-action: none;
   /* Prevent iOS zoom */
   -webkit-touch-callout: none;
+}
+
+#game {
+  z-index: 1;
+}
+
+#hud {
+  z-index: 10;
+  pointer-events: none;
 }
 
 /* iOS standalone mode detection */
