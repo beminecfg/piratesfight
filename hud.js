@@ -94,19 +94,43 @@ export function drawHUD(hud, h2d, camera, state){
 function drawHitIndicator(h2d, camera, hud, state){
   const shipPos = worldToScreen(camera, hud, state.player.pos);
   
-  // Calculate direction to attacker
+  // Calculate direction to attacker using WORLD coordinates, not screen
   if(state.hitIndicator.attackerPos){
-    const attackerScreen = worldToScreen(camera, hud, state.hitIndicator.attackerPos);
-    const dx = attackerScreen.x - shipPos.x;
-    const dy = attackerScreen.y - shipPos.y;
-    const angleToAttacker = Math.atan2(dy, dx);
+    // Direction from player to attacker in world space
+    const dirToAttacker = state.vec3(
+      state.hitIndicator.attackerPos.x - state.player.pos.x,
+      0,
+      state.hitIndicator.attackerPos.z - state.player.pos.z
+    );
+    
+    // Get camera direction in world space (XZ plane)
+    const cameraDir = state.vec3(
+      camera.position.x - state.player.pos.x,
+      0,
+      camera.position.z - state.player.pos.z
+    );
+    cameraDir.normalize();
+    
+    // Calculate angle from camera to attacker
+    const angleToAttacker = Math.atan2(dirToAttacker.x, dirToAttacker.z);
+    const angleCamera = Math.atan2(cameraDir.x, cameraDir.z);
+    
+    // Screen angle: angle from camera view (top of screen = 0, clockwise)
+    let screenAngle = angleToAttacker - angleCamera;
+    
+    // Normalize to -PI to PI
+    while(screenAngle > Math.PI) screenAngle -= Math.PI * 2;
+    while(screenAngle < -Math.PI) screenAngle += Math.PI * 2;
+    
+    // Convert to screen coordinates (screen Y axis is down, so we need to adjust)
+    // In screen space: 0 = right, PI/2 = down, PI = left, -PI/2 = up
+    const finalAngle = screenAngle + Math.PI / 2;
     
     // Draw small arc pointing to attacker
     const arcRadius = 360; // Far from ship
-    const arcAngle = Math.PI * 0.15; // 2x smaller (was 0.25)
-    const centerAngle = angleToAttacker;
-    const startAngle = centerAngle - arcAngle/2;
-    const endAngle = centerAngle + arcAngle/2;
+    const arcAngle = Math.PI * 0.15;
+    const startAngle = finalAngle - arcAngle/2;
+    const endAngle = finalAngle + arcAngle/2;
     
     h2d.beginPath();
     h2d.arc(shipPos.x, shipPos.y, arcRadius, startAngle, endAngle);
@@ -278,6 +302,16 @@ function drawEnemyHPBars(h2d, camera, hud, state){
   state.enemies.forEach(enemy => {
     if(enemy.hp <= 0 || enemy.sinking) return;
     
+    // Calculate distance from camera to enemy for scaling
+    const distToCamera = Math.sqrt(
+      Math.pow(camera.position.x - enemy.pos.x, 2) +
+      Math.pow(camera.position.z - enemy.pos.z, 2)
+    );
+    
+    // Scale HP bar based on distance (closer = larger)
+    // At 200 units = 1x, at 400 units = 0.5x, at 600+ units = 0.3x
+    const scaleFactor = Math.max(0.3, Math.min(1.5, 300 / distToCamera));
+    
     // Position above enemy ship - 1.5x higher
     const enemyPosAbove = state.vec3(enemy.pos.x, 42, enemy.pos.z);
     const screenPos = worldToScreen(camera, hud, enemyPosAbove);
@@ -285,8 +319,8 @@ function drawEnemyHPBars(h2d, camera, hud, state){
     // Check if on screen
     if(screenPos.x < 0 || screenPos.x > hud.width || screenPos.y < 0 || screenPos.y > hud.height) return;
     
-    const barWidth = 60;
-    const barHeight = 8;
+    const barWidth = 60 * scaleFactor;
+    const barHeight = 8 * scaleFactor;
     const barX = screenPos.x - barWidth/2;
     const barY = screenPos.y;
     

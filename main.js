@@ -147,7 +147,7 @@ const aimPoint = new THREE.Vector3();
 const cd = {left:0,right:0};
 
 // Camera zoom - make it global for mobile pinch
-window.cameraDistance = 220;
+window.cameraDistance = 280; // Initial camera distance (increased for better view)
 const minCameraDistance = 100;
 const maxCameraDistance = 400;
 

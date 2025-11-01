@@ -103,8 +103,9 @@ export function makeControls(camera, planeWater, fireFn, aimPoint){
     
     const safeArea = getSafeAreaInsets();
     const safeWidth = innerWidth - safeArea.left - safeArea.right;
-    const leftZoneEnd = safeArea.left + safeWidth * 0.33;
-    const rightZoneStart = safeArea.left + safeWidth * 0.67;
+    // Mobile: larger center zone (25%-75%) for easier camera control
+    const leftZoneEnd = safeArea.left + safeWidth * 0.25;
+    const rightZoneStart = safeArea.left + safeWidth * 0.75;
     
     // Левая треть экрана - джойстик движения (НЕЗАВИСИМО от других)
     if(x < leftZoneEnd && leftId===null){ 
@@ -194,9 +195,9 @@ export function makeControls(camera, planeWater, fireFn, aimPoint){
       const t1 = touches[touchIds[0]];
       const t2 = touches[touchIds[1]];
       
-      // Check if both touches are in center third of screen
-      const centerStart = innerWidth * 0.33;
-      const centerEnd = innerWidth * 0.67;
+      // Check if both touches are in center zone (25%-75%)
+      const centerStart = innerWidth * 0.25;
+      const centerEnd = innerWidth * 0.75;
       const inCenter1 = t1.x >= centerStart && t1.x <= centerEnd;
       const inCenter2 = t2.x >= centerStart && t2.x <= centerEnd;
       
@@ -237,9 +238,9 @@ export function makeControls(camera, planeWater, fireFn, aimPoint){
       const t1 = touches[touchIds[0]];
       const t2 = touches[touchIds[1]];
       
-      // Check if both touches are in center third of screen
-      const centerStart = innerWidth * 0.33;
-      const centerEnd = innerWidth * 0.67;
+      // Check if both touches are in center zone (25%-75%)
+      const centerStart = innerWidth * 0.25;
+      const centerEnd = innerWidth * 0.75;
       const inCenter1 = t1.x >= centerStart && t1.x <= centerEnd;
       const inCenter2 = t2.x >= centerStart && t2.x <= centerEnd;
       
