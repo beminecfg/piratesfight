@@ -48,7 +48,10 @@ export function makeControls(camera, planeWater, fireFn, aimPoint){
     raycaster.setFromCamera({x:nx,y:ny}, camera);
     const pos = new THREE.Vector3();
     raycaster.ray.intersectPlane(planeWater, pos);
-    if(pos) aimPoint.copy(pos);
+    if(pos) {
+      // Ensure aimPoint is exactly on water surface (y = 0)
+      aimPoint.set(pos.x, 0, pos.z);
+    }
   }
 
   addEventListener("contextmenu", e=>e.preventDefault());

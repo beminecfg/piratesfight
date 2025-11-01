@@ -732,11 +732,20 @@ function loop(now){
     
     if(dir.length() > 0.01){
       dir.normalize();
-      aimPoint.copy(player.pos).add(dir.multiplyScalar(120));
+      // Set aimPoint on water plane (y = 0)
+      aimPoint.set(
+        player.pos.x + dir.x * 120,
+        0, // Keep on water surface
+        player.pos.z + dir.z * 120
+      );
     } else {
       // Joystick at center - aim forward from camera
       const fwd = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), camYaw);
-      aimPoint.copy(player.pos).add(fwd.multiplyScalar(120));
+      aimPoint.set(
+        player.pos.x + fwd.x * 120,
+        0, // Keep on water surface
+        player.pos.z + fwd.z * 120
+      );
     }
   }
   
