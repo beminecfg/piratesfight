@@ -725,10 +725,11 @@ function loop(now){
     const camYaw = controls.getCam().yaw;
     const rv = controls.rightJoy.vec; // Vector from center to joystick position
     
-    // Convert joystick direction to world direction (same formula as left joystick)
-    const rx = rv.x * Math.cos(camYaw) - rv.y * Math.sin(camYaw);
-    const rz = rv.x * Math.sin(camYaw) + rv.y * Math.cos(camYaw);
-    const dir = new THREE.Vector3(rx, 0, -rz);
+    // Convert joystick direction to world direction
+    // Invert Y to match camera view (up on screen = forward in world)
+    const rx = rv.x * Math.cos(camYaw) + rv.y * Math.sin(camYaw);
+    const rz = rv.x * Math.sin(camYaw) - rv.y * Math.cos(camYaw);
+    const dir = new THREE.Vector3(rx, 0, rz);
     
     if(dir.length() > 0.01){
       dir.normalize();

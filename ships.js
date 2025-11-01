@@ -218,7 +218,9 @@ export function updateShip(s, dt, input, cfg){
   s.animState.pitch = targetPitch;
   
   // Apply animations
-  s.obj.position.copy(s.pos);
+  // Ensure ship stays on water surface (y = 0)
+  s.obj.position.set(s.pos.x, 0, s.pos.z);
+  s.pos.y = 0; // Force position to water level
   s.obj.rotation.y = s.ang;
   s.obj.rotation.z = s.animState.roll;
   s.obj.rotation.x = s.animState.pitch;
