@@ -745,14 +745,24 @@ function loop(now){
   requestAnimationFrame(loop);
 }
 
-hud.width = innerWidth; hud.height = innerHeight;
-renderer.setSize(innerWidth, innerHeight);
-camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
+// Handle window resize with proper pixel ratio for mobile
+function handleResize(){
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  
+  renderer.setSize(width, height);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Cap at 2x for performance
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+  hud.width = width;
+  hud.height = height;
+}
 
-addEventListener("resize", ()=>{
-  renderer.setSize(innerWidth, innerHeight);
-  camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
-  hud.width = innerWidth; hud.height = innerHeight;
+handleResize();
+
+addEventListener("resize", handleResize);
+addEventListener("orientationchange", ()=>{
+  setTimeout(handleResize, 100); // iOS needs delay after orientation change
 });
 
 requestAnimationFrame(loop);

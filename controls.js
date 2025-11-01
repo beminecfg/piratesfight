@@ -1,4 +1,38 @@
 import {THREE_NS as THREE} from './world.js';
+
+// Get safe area insets for proper touch zone detection
+function getSafeAreaInsets() {
+  const insets = {top: 0, right: 0, bottom: 0, left: 0};
+  
+  if(typeof getComputedStyle !== 'undefined' && document.documentElement){
+    const style = getComputedStyle(document.documentElement);
+    insets.top = parseInt(style.getPropertyValue('--sat') || 
+                         style.getPropertyValue('env(safe-area-inset-top)') || '0');
+    insets.right = parseInt(style.getPropertyValue('--sar') || 
+                           style.getPropertyValue('env(safe-area-inset-right)') || '0');
+    insets.bottom = parseInt(style.getPropertyValue('--sab') || 
+                            style.getPropertyValue('env(safe-area-inset-bottom)') || '0');
+    insets.left = parseInt(style.getPropertyValue('--sal') || 
+                          style.getPropertyValue('env(safe-area-inset-left)') || '0');
+  }
+  
+  // Fallback for iOS detection
+  if(insets.top === 0 && /iPhone|iPad|iPod/.test(navigator.userAgent)){
+    // Assume notch for newer iPhones in landscape
+    if(window.innerWidth > window.innerHeight && window.innerWidth >= 812){
+      insets.left = 44;
+      insets.right = 44;
+    }
+    // Portrait mode
+    else if(window.innerHeight >= 812){
+      insets.top = 44;
+      insets.bottom = 34;
+    }
+  }
+  
+  return insets;
+}
+
 export function makeControls(camera, planeWater, fireFn, aimPoint){
   const input = {forward:false, left:false, right:false, brake:false};
   let camYaw=0, camPitch=60, dragCam=false;
@@ -67,12 +101,17 @@ export function makeControls(camera, planeWater, fireFn, aimPoint){
       return;
     }
     
+    const safeArea = getSafeAreaInsets();
+    const safeWidth = innerWidth - safeArea.left - safeArea.right;
+    const leftZoneEnd = safeArea.left + safeWidth * 0.33;
+    const rightZoneStart = safeArea.left + safeWidth * 0.67;
+    
     // Левая треть экрана - джойстик движения
-    if(x<innerWidth*0.33 && leftId===null && camTouchId===null){ 
+    if(x < leftZoneEnd && leftId===null && camTouchId===null){ 
       leftId=id; leftJoy.active=true; leftJoy.start.x=x; leftJoy.start.y=y; leftJoy.pos.x=x; leftJoy.pos.y=y; leftJoy.vec.set(0,0); 
     }
     // Правая треть экрана - джойстик стрельбы
-    else if(x>innerWidth*0.67 && rightId===null && camTouchId===null){ 
+    else if(x > rightZoneStart && rightId===null && camTouchId===null){ 
       rightId=id; rightJoy.active=true; rightJoy.start.x=x; rightJoy.start.y=y; rightJoy.pos.x=x; rightJoy.pos.y=y; rightJoy.vec.set(0,0); 
     }
     // Средняя треть экрана - управление камерой

@@ -12,10 +12,44 @@ if(typeof window !== 'undefined'){
   });
 }
 
+// Get safe area insets for iOS
+function getSafeAreaInsets() {
+  const insets = {top: 0, right: 0, bottom: 0, left: 0};
+  
+  if(typeof getComputedStyle !== 'undefined' && document.documentElement){
+    const style = getComputedStyle(document.documentElement);
+    insets.top = parseInt(style.getPropertyValue('--sat') || 
+                         style.getPropertyValue('env(safe-area-inset-top)') || '0');
+    insets.right = parseInt(style.getPropertyValue('--sar') || 
+                           style.getPropertyValue('env(safe-area-inset-right)') || '0');
+    insets.bottom = parseInt(style.getPropertyValue('--sab') || 
+                            style.getPropertyValue('env(safe-area-inset-bottom)') || '0');
+    insets.left = parseInt(style.getPropertyValue('--sal') || 
+                          style.getPropertyValue('env(safe-area-inset-left)') || '0');
+  }
+  
+  // Fallback for iOS detection
+  if(insets.top === 0 && /iPhone|iPad|iPod/.test(navigator.userAgent)){
+    // Assume notch for newer iPhones in landscape
+    if(window.innerWidth > window.innerHeight && window.innerWidth >= 812){
+      insets.left = 44;
+      insets.right = 44;
+    }
+    // Portrait mode
+    else if(window.innerHeight >= 812){
+      insets.top = 44;
+      insets.bottom = 34;
+    }
+  }
+  
+  return insets;
+}
+
 export function drawHUD(hud, h2d, camera, state){
   hud.width = innerWidth; hud.height = innerHeight;
   const w=hud.width, h=hud.height;
-  drawTopBar(h2d,w,h,state);
+  const safeArea = getSafeAreaInsets();
+  drawTopBar(h2d,w,h,state,safeArea);
   
   // Draw enemy HP bars in 3D world
   if(state.enemies){
@@ -51,10 +85,10 @@ export function drawHUD(hud, h2d, camera, state){
   
   // Draw death screen
   if(state.player.sinking){
-    drawDeathScreen(h2d, w, h, state);
+    drawDeathScreen(h2d, w, h, state, safeArea);
   }
   
-  drawJoysticks(h2d,state);
+  drawJoysticks(h2d,state,safeArea);
 }
 
 function drawHitIndicator(h2d, camera, hud, state){
@@ -82,11 +116,11 @@ function drawHitIndicator(h2d, camera, hud, state){
   }
 }
 
-function drawDeathScreen(h2d, w, h, state){
+function drawDeathScreen(h2d, w, h, state, safeArea){
   // NO overlay - keep screen clear for spectating
   
-  // "You sunk!" text at bottom
-  const bottomY = h - 120;
+  // "You sunk!" text at bottom (accounting for safe area)
+  const bottomY = h - 120 - safeArea.bottom;
   h2d.font = 'bold 36px sans-serif';
   h2d.textAlign = 'center';
   h2d.textBaseline = 'middle';
@@ -173,9 +207,14 @@ function drawShipIcon(h2d, x, y, size, shipType){
   h2d.restore();
 }
 
-function drawTopBar(h2d,w,h,state){
-  const pad=8,bh=28,r=12;
-  const x=pad,y=pad,bw=w-pad*2;
+function drawTopBar(h2d,w,h,state,safeArea){
+  const pad=8;
+  const bh=28;
+  const r=12;
+  // Apply safe area padding
+  const x=pad + safeArea.left;
+  const y=pad + safeArea.top;
+  const bw=w - pad*2 - safeArea.left - safeArea.right;
   const alliesW=Math.max(120,bw*0.33);
   const enemiesW=Math.max(120,bw*0.33);
   const hpW=bw-alliesW-enemiesW;
@@ -266,7 +305,7 @@ function drawEnemyHPBars(h2d, camera, hud, state){
     h2d.strokeRect(barX, barY, barWidth, barHeight);
   });
 }
-function drawJoysticks(h2d,state){
+function drawJoysticks(h2d,state,safeArea){
   const a=state.leftJoy; const b=state.rightJoy;
   if(a.active){
     const R=a.radius; const cx=a.start.x; const cy=a.start.y;
