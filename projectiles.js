@@ -16,7 +16,7 @@ export function fireBroadside(ctx){
   if(side==="left" && ctx.cd.left>0) return null;
   if(side==="right" && ctx.cd.right>0) return null;
   const base = player.pos.clone().add(r.clone().multiplyScalar(side==="right"?6:-6));
-  const spread = (Math.random()-0.5)*0.12;
+  const spread = (Math.random()-0.5)*0.08; // Small spread for accuracy
   const aimDir = dir2d.clone().normalize().applyAxisAngle(new THREE.Vector3(0,1,0), spread);
   
   // Calculate proper ballistic trajectory
@@ -32,7 +32,7 @@ export function fireBroadside(ctx){
   const verticalVel = (targetY - startY + 0.5 * gravity * timeToTarget * timeToTarget) / timeToTarget;
   
   const vel = aimDir.clone().multiplyScalar(horizontalSpeed);
-  vel.y = verticalVel + (Math.random() - 0.5) * 4; // Small random variation
+  vel.y = verticalVel + (Math.random() - 0.5) * 2; // Small random variation (reduced)
   
   const shot = {p:new THREE.Vector3(base.x,startY,base.z), v:vel, mesh:null, team: player.team, firedTime: 0};
   shots.push(shot);

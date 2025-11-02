@@ -303,6 +303,7 @@ function cleanupWaterEffects(effects, scene){
   effects.wake.forEach(w => scene.remove(w.mesh));
   if(effects.reloadArcs.left) scene.remove(effects.reloadArcs.left.group);
   if(effects.reloadArcs.right) scene.remove(effects.reloadArcs.right.group);
+  if(effects.aimLine) scene.remove(effects.aimLine.group);
 }
 
 // Handle respawn button clicks
@@ -654,6 +655,39 @@ function loop(now){
   // Check all collisions
   checkCollisions();
 
+  // Show aim ONLY for mouse (not for mobile joysticks)
+  const showAimLine = !player.sinking && (controls.showAimRef?.() || false) && !controls.rightJoy.active;
+  
+  // Update aimPoint from right joystick DIRECTION every frame
+  if(controls.rightJoy.active && !player.sinking){
+    const camYaw = controls.getCam().yaw;
+    const rv = controls.rightJoy.vec; // Vector from joystick: x = left/right, y = up/down
+    
+    // Use EXACT same formula as left joystick (movement) for consistency
+    const rx = rv.x * Math.cos(camYaw) - rv.y * Math.sin(camYaw);
+    const rz = rv.x * Math.sin(camYaw) + rv.y * Math.cos(camYaw);
+    const dir = new THREE.Vector3(rx, 0, -rz);
+    
+    if(dir.length() > 0.01){
+      dir.normalize();
+      // Set aimPoint on water plane (y = 0), 120 units from player
+      aimPoint.set(
+        player.pos.x + dir.x * 120,
+        0, // Keep on water surface
+        player.pos.z + dir.z * 120
+      );
+    } else {
+      // Joystick at center - aim forward from camera
+      const camForward = new THREE.Vector3(Math.sin(camYaw), 0, -Math.cos(camYaw));
+      aimPoint.set(
+        player.pos.x + camForward.x * 120,
+        0,
+        player.pos.z + camForward.z * 120
+      );
+    }
+  }
+  // Note: for mouse aiming, aimPoint is updated in controls.js via updateAimFromScreen
+
   for(const s of [player, ...enemies]){
     // Animate sails
     if(!s.sailTime) s.sailTime = Math.random() * Math.PI * 2;
@@ -701,7 +735,9 @@ function loop(now){
     
     const cdL = s === player ? cd.left : s.cd.left;
     const cdR = s === player ? cd.right : s.cd.right;
-    updateShipWaterEffects(s, s.waterEffects, dt, cdL, cdR, reloadTime, s.sinking);
+    const showAim = s === player ? showAimLine : false;
+    const aim = s === player ? aimPoint : null;
+    updateShipWaterEffects(s, s.waterEffects, dt, cdL, cdR, reloadTime, s.sinking, showAim, aim);
   }
 
   const shotsFired = controls.consumeShots?.() || 0;
@@ -717,39 +753,6 @@ function loop(now){
   renderer.render(scene,camera);
 
   const speed = player.vel.length();
-  // Show aim when right joystick is active OR mouse aim is active
-  const showAimLine = !player.sinking && (controls.rightJoy.active || controls.showAimRef?.() || false);
-  
-  // Update aimPoint from right joystick DIRECTION every frame
-  if(controls.rightJoy.active && !player.sinking){
-    const camYaw = controls.getCam().yaw;
-    const rv = controls.rightJoy.vec; // Vector from center to joystick position
-    
-    // Convert joystick direction to world direction
-    // Invert Y to match camera view (up on screen = forward in world)
-    const rx = rv.x * Math.cos(camYaw) + rv.y * Math.sin(camYaw);
-    const rz = rv.x * Math.sin(camYaw) - rv.y * Math.cos(camYaw);
-    const dir = new THREE.Vector3(rx, 0, rz);
-    
-    if(dir.length() > 0.01){
-      dir.normalize();
-      // Set aimPoint on water plane (y = 0)
-      aimPoint.set(
-        player.pos.x + dir.x * 120,
-        0, // Keep on water surface
-        player.pos.z + dir.z * 120
-      );
-    } else {
-      // Joystick at center - aim forward from camera
-      const fwd = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), camYaw);
-      aimPoint.set(
-        player.pos.x + fwd.x * 120,
-        0, // Keep on water surface
-        player.pos.z + fwd.z * 120
-      );
-    }
-  }
-  
   drawHUD(hud, h2d, camera, {player, fps, speed, showAim: showAimLine, aimPoint, vec3:(x,y,z)=>new THREE.Vector3(x,y,z), leftJoy:controls.leftJoy, rightJoy:controls.rightJoy, modelKind, cd, enemies, hitIndicator});
 
   requestAnimationFrame(loop);

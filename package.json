@@ -1,0 +1,17 @@
+{
+  "name": "v1.3",
+  "version": "1.0.0",
+  "description": "3D пиратская игра с морскими сражениями на Three.js",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@capacitor/cli": "^7.4.4",
+    "@capacitor/core": "^7.4.4",
+    "@capacitor/ios": "^7.4.4"
+  }
+}

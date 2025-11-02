@@ -157,7 +157,8 @@ export function createShipWaterEffects(ship, scene){
     bowWaves: [],
     wake: [],
     reflection: null,
-    reloadArcs: {left: null, right: null}
+    reloadArcs: {left: null, right: null},
+    aimLine: null
   };
   
   // Bow wave - V-shaped water displacement at bow
@@ -234,7 +235,37 @@ export function createShipWaterEffects(ship, scene){
   effects.reloadArcs.left = createReloadArc(scene, 'left');
   effects.reloadArcs.right = createReloadArc(scene, 'right');
   
+  // Create 3D aim line on water surface
+  effects.aimLine = createAimLine(scene);
+  
   return effects;
+}
+
+function createAimLine(scene){
+  const group = new THREE.Group();
+  
+  // Create thicker line using cylinder mesh instead of Line
+  const lineGeometry = new THREE.CylinderGeometry(0.5, 0.5, 120, 8);
+  lineGeometry.rotateX(Math.PI / 2); // Rotate to point forward (Z axis)
+  lineGeometry.translate(0, 0, -60); // Center at origin, extends to -120
+  
+  // Green glowing material - brighter and more visible
+  const lineMaterial = new THREE.MeshBasicMaterial({
+    color: 0x00ff66,
+    transparent: true,
+    opacity: 0.8,
+    depthTest: true,
+    depthWrite: false
+  });
+  
+  const line = new THREE.Mesh(lineGeometry, lineMaterial);
+  line.position.y = 0.6; // Slightly above water
+  group.add(line);
+  
+  scene.add(group);
+  group.visible = false; // Hidden by default
+  
+  return {group, line};
 }
 
 function createReloadArc(scene, side){
@@ -312,7 +343,7 @@ function createReloadArc(scene, side){
   };
 }
 
-export function updateShipWaterEffects(shipData, effects, dt, cdLeft, cdRight, reloadTime, isSinking){
+export function updateShipWaterEffects(shipData, effects, dt, cdLeft, cdRight, reloadTime, isSinking, showAim, aimPoint){
   if(!effects) return;
   
   const speed = shipData.vel.length();
@@ -324,6 +355,31 @@ export function updateShipWaterEffects(shipData, effects, dt, cdLeft, cdRight, r
     effects.reflection.position.x = shipData.pos.x;
     effects.reflection.position.z = shipData.pos.z;
     effects.reflection.rotation.y = shipData.ang;
+  }
+  
+  // Update 3D aim line on water surface
+  if(effects.aimLine){
+    const shouldShow = showAim && !isSinking;
+    effects.aimLine.group.visible = shouldShow;
+    
+    if(shouldShow && aimPoint){
+      // Position line at ship (on water surface)
+      effects.aimLine.group.position.set(shipData.pos.x, 0.5, shipData.pos.z);
+      
+      // Calculate direction to aimPoint
+      const dir = new THREE.Vector3(
+        aimPoint.x - shipData.pos.x,
+        0,
+        aimPoint.z - shipData.pos.z
+      );
+      const distance = dir.length();
+      
+      if(distance > 0.1){
+        // Rotate group to point toward aimPoint
+        const angle = Math.atan2(dir.x, -dir.z);
+        effects.aimLine.group.rotation.y = angle;
+      }
+    }
   }
   
   // Hide reload arcs if sinking
@@ -346,10 +402,14 @@ export function updateShipWaterEffects(shipData, effects, dt, cdLeft, cdRight, r
       w.mesh.visible = false;
       w.life = 0;
     });
+    if(effects.reflection) effects.reflection.visible = false;
     return;
   }
   
-  // Update bow waves - V-shaped displacement at bow
+  // Ensure reflection is visible when not sinking
+  if(effects.reflection) effects.reflection.visible = true;
+  
+  // Update bow waves - V-shaped displacement at bow (only spawn when moving)
   if(speed > 3){
     effects.bowWaves.forEach((wave, idx) => {
       wave.life += dt;
@@ -417,17 +477,41 @@ export function updateShipWaterEffects(shipData, effects, dt, cdLeft, cdRight, r
         }
       }
     });
-  } else {
-    // Hide effects when not moving
-    effects.bowWaves.forEach(w => {
-      w.mesh.visible = false;
-      w.life = 0;
-    });
-    effects.wake.forEach(w => {
-      w.mesh.visible = false;
-      w.life = 0;
-    });
   }
+  
+  // Continue animating existing waves even when stopped (they fade naturally)
+  effects.bowWaves.forEach((wave) => {
+    if(wave.mesh.visible && speed <= 3){
+      // Let existing waves fade out
+      wave.life += dt;
+      const spawnTime = wave.offset;
+      if(wave.life > spawnTime){
+        const localLife = wave.life - spawnTime;
+        wave.mesh.material.opacity = 0.5 * Math.max(0, 1 - localLife / 1.2);
+        if(localLife >= 1.2){
+          wave.mesh.visible = false;
+          wave.life = 0;
+        }
+      }
+    }
+  });
+  
+  effects.wake.forEach((trail) => {
+    if(trail.mesh.visible && speed <= 3){
+      // Let existing trails fade out
+      trail.life += dt;
+      const delay = 0.08 * trail.index;
+      if(trail.life > delay){
+        const localLife = trail.life - delay;
+        const fadeTime = 1.5 + trail.index * 0.3;
+        trail.mesh.material.opacity = 0.4 * Math.max(0, 1 - localLife / fadeTime);
+        if(localLife >= fadeTime){
+          trail.mesh.visible = false;
+          trail.life = 0;
+        }
+      }
+    }
+  });
 }
 
 function updateReloadArc(arc, shipData, cd, reloadTime){

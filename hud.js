@@ -64,18 +64,7 @@ export function drawHUD(hud, h2d, camera, state){
   // Draw broadside arcs around ship
   drawBroadsideArcs(h2d, camera, hud, state);
   
-  if(state.showAim){
-    // Use joystick position for mobile, mouse for desktop
-    let targetX = mouseX;
-    let targetY = mouseY;
-    if(state.rightJoy && state.rightJoy.active){
-      // Convert aimPoint from world to screen coordinates
-      const aimScreenPos = worldToScreen(camera, hud, state.aimPoint);
-      targetX = aimScreenPos.x;
-      targetY = aimScreenPos.y;
-    }
-    drawAimingLine(h2d, camera, hud, state, targetX, targetY);
-  }
+  // Aim line is now 3D (in world.js), no need to draw it in 2D HUD
   
   for(const sp of splashes){
     const p = worldToScreen(camera, hud, state.vec3(sp.x,0,sp.z));
@@ -94,48 +83,28 @@ export function drawHUD(hud, h2d, camera, state){
 function drawHitIndicator(h2d, camera, hud, state){
   const shipPos = worldToScreen(camera, hud, state.player.pos);
   
-  // Calculate direction to attacker using WORLD coordinates, not screen
+  // Calculate direction to attacker using screen coordinates (simpler and correct)
   if(state.hitIndicator.attackerPos){
-    // Direction from player to attacker in world space
-    const dirToAttacker = state.vec3(
-      state.hitIndicator.attackerPos.x - state.player.pos.x,
-      0,
-      state.hitIndicator.attackerPos.z - state.player.pos.z
-    );
+    // Project attacker position to screen
+    const attackerPos = worldToScreen(camera, hud, state.hitIndicator.attackerPos);
     
-    // Get camera direction in world space (XZ plane)
-    const cameraDir = state.vec3(
-      camera.position.x - state.player.pos.x,
-      0,
-      camera.position.z - state.player.pos.z
-    );
-    cameraDir.normalize();
+    // Direction from ship to attacker on screen
+    const dx = attackerPos.x - shipPos.x;
+    const dy = attackerPos.y - shipPos.y;
     
-    // Calculate angle from camera to attacker
-    const angleToAttacker = Math.atan2(dirToAttacker.x, dirToAttacker.z);
-    const angleCamera = Math.atan2(cameraDir.x, cameraDir.z);
-    
-    // Screen angle: angle from camera view (top of screen = 0, clockwise)
-    let screenAngle = angleToAttacker - angleCamera;
-    
-    // Normalize to -PI to PI
-    while(screenAngle > Math.PI) screenAngle -= Math.PI * 2;
-    while(screenAngle < -Math.PI) screenAngle += Math.PI * 2;
-    
-    // Convert to screen coordinates (screen Y axis is down, so we need to adjust)
-    // In screen space: 0 = right, PI/2 = down, PI = left, -PI/2 = up
-    const finalAngle = screenAngle + Math.PI / 2;
+    // Angle to attacker on screen (0 = right, Math.PI/2 = down)
+    const angleToAttacker = Math.atan2(dy, dx);
     
     // Draw small arc pointing to attacker
     const arcRadius = 360; // Far from ship
     const arcAngle = Math.PI * 0.15;
-    const startAngle = finalAngle - arcAngle/2;
-    const endAngle = finalAngle + arcAngle/2;
+    const startAngle = angleToAttacker - arcAngle/2;
+    const endAngle = angleToAttacker + arcAngle/2;
     
     h2d.beginPath();
     h2d.arc(shipPos.x, shipPos.y, arcRadius, startAngle, endAngle);
     h2d.strokeStyle = `rgba(255,50,50,${state.hitIndicator.opacity})`;
-    h2d.lineWidth = 5;
+    h2d.lineWidth = 6;
     h2d.stroke();
   }
 }
